@@ -1,7 +1,7 @@
 const encodedKey = "QVEuQWI4Uk42S0kzZlJEUS12N3R3UUVWRlB0UFh4eHpuNTdpQTc3WHJsNGhvOXoxdzByUWc=";
 const API_KEY = atob(encodedKey);
 
-const MODEL = "gemini-1.5-flash";
+const MODEL = "gemini-3.5-flash";
 
 const GOOGLE_CLIENT_ID = "634945721716-o2c0gg53bgebts6dh859veuv9141okad.apps.googleusercontent.com";
 
@@ -56,11 +56,6 @@ async function handleGoogleLogin(response) {
         localStorage.setItem("simpleAI_user", JSON.stringify(profile));
         hideGoogleButton();
         console.log("Google login successful:", profile);
-
-        // ЗАПРАШИВАЕМ ПРАВА НА ДИСК (вызывается отдельное окошко Google с подтверждением доступа к appDataFolder)
-        if (googleDriveTokenClient) {
-            googleDriveTokenClient.requestAccessToken({ prompt: 'consent' });
-        }
 
     } catch (error) {
         console.error("Ошибка обработки Google-входа:", error);
@@ -187,6 +182,11 @@ profileButton.addEventListener(
     "click",
     function(){
         showGoogleButton();
+        
+        // Если клиент токенов уже инициализирован, запрашиваем доступ к диску по клику
+        if (googleDriveTokenClient) {
+            googleDriveTokenClient.requestAccessToken({ prompt: 'consent' });
+        }
     }
 );
 
