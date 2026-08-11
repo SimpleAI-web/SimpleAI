@@ -465,34 +465,18 @@ async function sendMessage() {
 
         });
 
-        const response =
-            await fetch(
-                "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}" +
-                MODEL +
-                ":generateContent",
-                {
-
-                    method: "POST",
-
-                    headers: {
-
-                        "Content-Type":
-                            "application/json",
-
-                        "x-goog-api-key":
-                            API_KEY
-
-                    },
-
-                    body: JSON.stringify({
-
-                        contents:
-                            conversation
-
-                    })
-
-                }
-            );
+        const response = await fetch(
+    https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY},
+    {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            contents: conversation
+        })
+    }
+);
 
         const data =
             await response.json();
