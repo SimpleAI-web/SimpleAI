@@ -25,6 +25,9 @@ const closeChatHistory = document.getElementById("closeChatHistory");
 
 const conversation = [];
 
+let googleDriveTokenClient = null;
+let driveAccessToken = localStorage.getItem("google_auth_token") || null;
+
 let googleInitialized = false;
 
 
@@ -50,36 +53,13 @@ async function handleGoogleLogin(response) {
         };
 
         showUserProfile(profile);
-
-        localStorage.setItem(
-            "simpleAI_user",
-            JSON.stringify(profile)
-        );
-
+        localStorage.setItem("simpleAI_user", JSON.stringify(profile));
         hideGoogleButton();
         console.log("Google login successful:", profile);
 
-        // ==========================================
-        // НОВАЯ ЧАСТЬ: ПОДТЯГИВАЕМ ЧАТЫ ИЗ GOOGLE ДИСКА
-        // ==========================================
-        // Сохраняем токен в localStorage, чтобы использовать для запросов к диску
-        localStorage.setItem("google_auth_token", token);
-
-        const cloudChats = await loadChatsFromGoogleDrive(token);
-        
-        if (cloudChats && Array.isArray(cloudChats) && cloudChats.length > 0) {
-            // Если в облаке есть чаты — перезаписываем ими локальные и обновляем экран
-            chats = cloudChats;
-            saveChatsToLocalStorage();
-            renderChatList();
-            
-            // Открываем самый первый чат из облака
-            currentChatId = chats[0].chatId;
-            switchChat(currentChatId);
-            console.log("Чаты успешно синхронизированы с Google Диска!");
-        } else if (chats.length > 0) {
-            // Если в облаке пусто, но на устройстве что-то было — отправляем локальные чаты в облако
-            await saveChatsToGoogleDrive(token, chats);
+        // ЗАПРАШИВАЕМ ПРАВА НА ДИСК (вызывается отдельное окошко Google с подтверждением доступа к appDataFolder)
+        if (googleDriveTokenClient) {
+            googleDriveTokenClient.requestAccessToken({ prompt: 'consent' });
         }
 
     } catch (error) {
@@ -103,36 +83,50 @@ function initializeGoogleLogin() {
         !google.accounts ||
         !google.accounts.id
     ) {
-
-        console.error(
-            "Google Identity Services не загрузился."
-        );
-
+        console.error("Google Identity Services не загрузился.");
         return;
-
     }
 
+    // 1. Инициализация обычной авторизации (для профиля)
     google.accounts.id.initialize({
-
         client_id: GOOGLE_CLIENT_ID,
-
         callback: handleGoogleLogin,
-
-        auto_select: true, // Включает автоподхват сессии после перезагрузки
-
-        scope: "https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/userinfo.profile"
-
+        auto_select: true
     });
 
+    // 2. Инициализация OAuth 2.0 клиента для доступа к Google Диску (appDataFolder)
+    if (google.accounts.oauth2) {
+        googleDriveTokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: GOOGLE_CLIENT_ID,
+            scope: "https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/userinfo.profile",
+            callback: async (tokenResponse) => {
+                if (tokenResponse && tokenResponse.access_token) {
+                    driveAccessToken = tokenResponse.access_token;
+                    localStorage.setItem("google_auth_token", driveAccessToken);
+                    console.log("Токен доступа к Google Диску успешно получен!");
+                    
+                    // Как только получили токен, сразу пробуем подтянуть чаты или отправить их
+                    const cloudChats = await loadChatsFromGoogleDrive(driveAccessToken);
+                    if (cloudChats && Array.isArray(cloudChats) && cloudChats.length > 0) {
+                        chats = cloudChats;
+                        saveChatsToLocalStorage();
+                        renderChatList();
+                        if (chats.length > 0) {
+                            currentChatId = chats[0].chatId;
+                            switchChat(currentChatId);
+                        }
+                        console.log("Чаты загружены с Диска после авторизации!");
+                    } else if (chats.length > 0) {
+                        await saveChatsToGoogleDrive(driveAccessToken, chats);
+                    }
+                }
+            }
+        });
+    }
+
     googleInitialized = true;
-
-    console.log(
-        "Google Identity Services initialized."
-    );
-
-    // Автоматически пытаемся восстановить сессию
+    console.log("Google Identity Services initialized.");
     google.accounts.id.prompt();
-
 }
 
 
@@ -648,10 +642,9 @@ let currentChatId = null;
 function saveChatsToLocalStorage() {
     localStorage.setItem("simpleAI_chats", JSON.stringify(chats));
 
-    // Автоматически отправляем в облако, если у пользователя есть токен авторизации
-    const token = localStorage.getItem("google_auth_token");
-    if (token) {
-        saveChatsToGoogleDrive(token, chats);
+    // Автоматически отправляем в облако, если есть токен диска
+    if (driveAccessToken) {
+        saveChatsToGoogleDrive(driveAccessToken, chats);
     }
 }
 
