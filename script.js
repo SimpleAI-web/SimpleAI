@@ -32,30 +32,14 @@ let googleInitialized = false;
 // GOOGLE LOGIN
 // ============================================================
 
-function handleGoogleLogin(response) {
-
+async function handleGoogleLogin(response) {
     try {
-
         const token = response.credential;
-
         const payload = token.split(".")[1];
-
-        const base64 = payload
-            .replace(/-/g, "+")
-            .replace(/_/g, "/");
-
-        const decoded = decodeURIComponent(
-            atob(base64)
-                .split("")
-                .map(function(character) {
-
-                    return "%" +
-                        ("00" + character.charCodeAt(0).toString(16))
-                            .slice(-2);
-
-                })
-                .join("")
-        );
+        const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+        const decoded = decodeURIComponent(atob(base64).split("").map(function(character) {
+            return "%" + ("00" + character.charCodeAt(0).toString(16)).slice(-2);
+        }).join(""));
 
         const user = JSON.parse(decoded);
 
@@ -73,21 +57,34 @@ function handleGoogleLogin(response) {
         );
 
         hideGoogleButton();
+        console.log("Google login successful:", profile);
 
-        console.log(
-            "Google login successful:",
-            profile
-        );
+        // ==========================================
+        // НОВАЯ ЧАСТЬ: ПОДТЯГИВАЕМ ЧАТЫ ИЗ GOOGLE ДИСКА
+        // ==========================================
+        // Сохраняем токен в localStorage, чтобы использовать для запросов к диску
+        localStorage.setItem("google_auth_token", token);
+
+        const cloudChats = await loadChatsFromGoogleDrive(token);
+        
+        if (cloudChats && Array.isArray(cloudChats) && cloudChats.length > 0) {
+            // Если в облаке есть чаты — перезаписываем ими локальные и обновляем экран
+            chats = cloudChats;
+            saveChatsToLocalStorage();
+            renderChatList();
+            
+            // Открываем самый первый чат из облака
+            currentChatId = chats[0].chatId;
+            switchChat(currentChatId);
+            console.log("Чаты успешно синхронизированы с Google Диска!");
+        } else if (chats.length > 0) {
+            // Если в облаке пусто, но на устройстве что-то было — отправляем локальные чаты в облако
+            await saveChatsToGoogleDrive(token, chats);
+        }
 
     } catch (error) {
-
-        console.error(
-            "Ошибка обработки Google-входа:",
-            error
-        );
-
+        console.error("Ошибка обработки Google-входа:", error);
     }
-
 }
 
 
@@ -122,7 +119,7 @@ function initializeGoogleLogin() {
     });
 
     googleInitialized = true;
-
+xs
     console.log(
         "Google Identity Services initialized."
     );
@@ -641,6 +638,12 @@ let currentChatId = null;
 
 function saveChatsToLocalStorage() {
     localStorage.setItem("simpleAI_chats", JSON.stringify(chats));
+
+    // Автоматически отправляем в облако, если у пользователя есть токен авторизации
+    const token = localStorage.getItem("google_auth_token");
+    if (token) {
+        saveChatsToGoogleDrive(token, chats);
+    }
 }
 
 function startNewChat() {
@@ -748,4 +751,99 @@ if (chats.length === 0) {
     startNewChat();
 } else {
     renderChatList();
+}
+
+// ============================================================
+// СИНХРОНИЗАЦИЯ С GOOGLE DRIVE APPDATA
+// ============================================================
+
+// Функция поиска и скачивания чатов с Google Диска
+async function loadChatsFromGoogleDrive(token) {
+    try {
+        // 1. Ищем файл с именем "chats.json" в скрытой папке appDataFolder
+        const query = encodeURIComponent("name = 'chats.json' and 'appDataFolder' in parents and trashed = false");
+        const listResponse = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&spaces=appDataFolder`, {
+            method: "GET",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        
+        const listData = await listResponse.json();
+
+        // Если файла еще нет на диске — значит, аккаунт новый, возвращаем null
+        if (!listData.files || listData.files.length === 0) {
+            console.log("Файл чатов на Google Диске не найден (новый пользователь).");
+            return null;
+        }
+
+        const fileId = listData.files[0].id;
+
+        // 2. Скачиваем содержимое найденного файла
+        const fileResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+            method: "GET",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (!fileResponse.ok) {
+            throw new Error("Не удалось скачать файл с Google Диска");
+        }
+
+        const cloudChats = await fileResponse.json();
+        console.log("Чаты успешно загружены из Google Диска!");
+        return cloudChats;
+
+    } catch (error) {
+        console.error("Ошибка при загрузке с Google Диска:", error);
+        return null;
+    }
+}
+
+// Функция сохранения/обновления чатов на Google Диске
+async function saveChatsToGoogleDrive(token, chatsData) {
+    try {
+        const jsonData = JSON.stringify(chatsData);
+
+        // 1. Сначала ищем, существует ли уже файл "chats.json" в appDataFolder
+        const query = encodeURIComponent("name = 'chats.json' and 'appDataFolder' in parents and trashed = false");
+        const listResponse = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&spaces=appDataFolder`, {
+            method: "GET",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        
+        const listData = await listResponse.json();
+        const fileExists = listData.files && listData.files.length > 0;
+
+        if (fileExists) {
+            // 2А. Если файл есть — обновляем его (перезаписываем свежими данными)
+            const fileId = listData.files[0].id;
+            await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+                method: "PATCH",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: jsonData
+            });
+            console.log("Чаты на Google Диске обновлены.");
+        } else {
+            // 2Б. Если файла нет — создаем его с нуля в скрытой папке
+            const metadata = {
+                name: "chats.json",
+                parents: ["appDataFolder"]
+            };
+
+            const form = new FormData();
+            form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
+            form.append("file", new Blob([jsonData], { type: "application/json" }));
+
+            await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${token}` },
+                body: form
+            });
+            console.log("Создан новый файл чатов на Google Диске.");
+        }
+
+    } catch (error) {
+        console.error("Ошибка при сохранении на Google Диск:", error);
+    }
 }
