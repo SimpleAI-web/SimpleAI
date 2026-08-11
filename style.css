@@ -388,109 +388,50 @@ body {
 }
 
 /* Адаптация для мобильных устройств */
-@media screen and (max-width: 600px) {
-    /* Делаем шапку более компактной */
-    header {
-        flex-wrap: wrap; /* Разрешаем элементам переноситься на новую строку */
-        height: auto;    /* Высота подстраивается под контент */
-        padding: 5px;
-    }
-
-    /* Уменьшаем блок профиля, чтобы он не вылезал */
-    #userProfile {
-        font-size: 12px;
-        padding: 5px;
-    }
-
-    /* Кнопка "Выйти" может занимать лишнее место */
-    #logoutButton {
-        padding: 5px 10px;
-        font-size: 12px;
-    }
-
-    /* Блок истории должен занимать весь экран на телефоне */
-    #chatHistory {
-        width: 100% !important;
-        left: 0;
-        top: 0;
-        height: 100vh;
-        z-index: 1000;
-    }
-
-    /* Поле ввода и кнопка отправить */
-    #messageInput {
-        width: 70%; /* Немного уменьшим */
-    }
-    
-    #sendButton {
-        width: 30%;
-    }
-}
-
-@media screen and (max-width: 600px) {
-    /* 1. Делаем блок истории чатов шириной 85% от экрана */
-    #chatHistory {
-        width: 85% !important; 
-        max-width: 400px; /* Чтобы на огромных телефонах не был слишком широким */
-        padding: 10px;
-        box-sizing: border-box; /* Чтобы отступы не увеличивали размер блока */
-    }
-
-    /* 2. Немного отступ для профиля, чтобы кнопка 'Выйти' не прилипала */
-    #userProfile {
-        margin-right: 10px;
-        gap: 5px; /* расстояние между аватаром и именем */
-    }
-
-    /* 3. Компактная шапка */
-    header {
-        padding: 5px 10px !important;
-        gap: 10px;
-    }
-}
-
-/* Базовые стили для мобильных экранов (до 768px) */
 @media screen and (max-width: 768px) {
-    body {
-        font-size: 14px; /* Уменьшаем базовый размер шрифта */
-        padding: 5px;
-        margin: 0;
-    }
-
-    /* Контейнер чата на весь экран */
-    .chat-container, 
-    .app-wrapper {
+    /* 1. Убираем внешние отступы и границы у главного окна на телефоне */
+    .app {
         width: 100% !important;
-        height: 100vh !important;
-        border: none !important;
+        height: 100% !important;
+        margin: 0 !important;
         border-radius: 0 !important;
+        border-left: none !important;
+        border-right: none !important;
+        border-bottom: none !important;
     }
 
-    /* Сообщения в чате */
-    .message, 
-    .user-message, 
-    .ai-message {
-        font-size: 15px !important; /* Делаем текст сообщений аккуратнее */
-        max-width: 85% !important;
-        padding: 10px 12px !important;
+    /* 2. Делаем шрифт чуть меньше для мобильных */
+    body {
+        font-size: 14px;
     }
 
-    /* Поле ввода текста и кнопка отправки */
-    input[type="text"], 
-    textarea, 
-    #messageInput {
-        font-size: 16px !important; /* На iOS меньше 16px вызывает автозум, 16px — идеально */
-        padding: 10px !important;
-    }
-
-    #sendButton, 
-    .send-btn {
-        padding: 10px 15px !important;
+    /* 3. Исправляем размер сообщений */
+    .message {
+        max-width: 90% !important;
         font-size: 14px !important;
+        padding: 8px 12px !important;
     }
 
-    /* Шапка / Профиль */
-    header, .header {
-        padding: 8px 12px !important;
+    /* 4. Исправляем поле ввода, чтобы не было гигантским */
+    .input-area {
+        height: 50px !important;
+    }
+
+    #messageInput {
+        font-size: 16px !important; /* Важно: 16px предотвращает зум на iOS */
+    }
+
+    #sendButton {
+        width: 80px !important; /* Уменьшаем кнопку на мобильных */
+    }
+
+    /* 5. Исправляем историю чатов (у тебя в HTML класс .chat-history) */
+    .chat-history {
+        width: 100% !important;
+        height: 100% !important;
+        top: 0 !important;
+        left: 0 !important;
+        transform: none !important;
+        border-radius: 0 !important;
     }
 }
