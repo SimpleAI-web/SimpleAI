@@ -448,3 +448,49 @@ body {
         gap: 10px;
     }
 }
+
+/* Базовые стили для мобильных экранов (до 768px) */
+@media screen and (max-width: 768px) {
+    body {
+        font-size: 14px; /* Уменьшаем базовый размер шрифта */
+        padding: 5px;
+        margin: 0;
+    }
+
+    /* Контейнер чата на весь экран */
+    .chat-container, 
+    .app-wrapper {
+        width: 100% !important;
+        height: 100vh !important;
+        border: none !important;
+        border-radius: 0 !important;
+    }
+
+    /* Сообщения в чате */
+    .message, 
+    .user-message, 
+    .ai-message {
+        font-size: 15px !important; /* Делаем текст сообщений аккуратнее */
+        max-width: 85% !important;
+        padding: 10px 12px !important;
+    }
+
+    /* Поле ввода текста и кнопка отправки */
+    input[type="text"], 
+    textarea, 
+    #messageInput {
+        font-size: 16px !important; /* На iOS меньше 16px вызывает автозум, 16px — идеально */
+        padding: 10px !important;
+    }
+
+    #sendButton, 
+    .send-btn {
+        padding: 10px 15px !important;
+        font-size: 14px !important;
+    }
+
+    /* Шапка / Профиль */
+    header, .header {
+        padding: 8px 12px !important;
+    }
+}
