@@ -1,7 +1,7 @@
 const encodedKey = "QVEuQWI4Uk42SXZMNks0TmR5ajRhTVhkR3gyU08yOUlJdGhrUDJQU2ptR0paV2l0azlUelE=";
 const API_KEY = atob(encodedKey);
 
-const MODEL = "gemini-3.6-flash";
+const MODEL = "gemini-1.5-flash";
 
 const GOOGLE_CLIENT_ID = "634945721716-o2c0gg53bgebts6dh859veuv9141okad.apps.googleusercontent.com";
 
