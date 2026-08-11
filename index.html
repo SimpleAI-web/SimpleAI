@@ -1,100 +1,161 @@
 <!DOCTYPE html>
 <html lang="ru">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>SimpleAI</title>
-
     <link rel="stylesheet" href="style.css">
-
 </head>
-
 <body>
 
-    <div class="app">
+<div class="app">
 
-        <div class="header">
+    <div class="header">
+        <h1>SimpleAI</h1>
 
-            <h1>SimpleAI</h1>
+        <div class="account-area">
+            <button id="profileButton">Profile</button>
+            <button id="historyButton">History</button>
 
-            <div class="account-area">
-
-                <button id="profileButton">
-                	Profile
-                </button>
-
-                <button id="historyButton">
-                    History
-                </button>    
-
-                <div id="userProfile">
-
-                    <div id="profileChatButton">
-
-                    	<img id="userAvatar" src="" alt="Avatar">
-
-                    	<span id="userName"></span>
-
-                    </div>
-
-                    <button id="logoutButton">
-                        Выйти
-                    </button>
-
+            <div id="userProfile">
+                <div id="profileChatButton">
+                    <div id="userAvatar" class="avatar-placeholder">S</div>
+                    <span id="userName"></span>
                 </div>
+                <button id="logoutButton">Выйти</button>
+            </div>
+        </div>
+    </div>
 
+    <div class="chat" id="chat"></div>
+
+    <div id="chatHistory" class="chat-history">
+        <div class="chat-history-header">
+            <span>Chat history</span>
+            <button id="closeChatHistory">×</button>
+        </div>
+
+        <button id="newChatButton">+ New chat</button>
+        <div id="chatList"></div>
+    </div>
+
+    <div class="input-area">
+        <input type="text" id="messageInput" placeholder="Write here...">
+        <button id="sendButton">Send</button>
+    </div>
+
+</div>
+
+<!-- PROFILE / AUTH MODAL -->
+<div id="authOverlay" class="auth-overlay">
+    <div class="auth-modal">
+
+        <button id="closeAuth" class="auth-close">×</button>
+
+        <!-- LOGIN -->
+        <div id="loginView" class="auth-view">
+            <div class="auth-title">Войти в Simple AI</div>
+            <div class="auth-subtitle">Войдите в свой аккаунт</div>
+
+            <label>Email</label>
+            <input id="loginEmail" class="auth-input" type="email" autocomplete="email"
+                   placeholder="your@email.com">
+
+            <label>Пароль</label>
+            <div class="password-wrap">
+                <input id="loginPassword" class="auth-input" type="password"
+                       autocomplete="current-password" placeholder="Введите пароль">
+                <button class="password-toggle" data-target="loginPassword">Показать</button>
             </div>
 
+            <div id="loginError" class="auth-error"></div>
+
+            <button id="loginSubmit" class="auth-primary">Войти</button>
+
+            <div class="auth-switch">
+                Нет аккаунта?
+                <button id="openRegister">Регистрация</button>
+            </div>
         </div>
 
-        <div class="chat" id="chat">
+        <!-- REGISTER -->
+        <div id="registerView" class="auth-view hidden">
+            <div class="auth-title">Создать аккаунт</div>
+            <div class="auth-subtitle">Регистрация в Simple AI</div>
 
+            <label>Username</label>
+            <input id="registerUsername" class="auth-input" type="text"
+                   autocomplete="username" placeholder="Ваш никнейм">
+
+            <label>Email</label>
+            <input id="registerEmail" class="auth-input" type="email"
+                   autocomplete="email" placeholder="your@email.com">
+
+            <label>Пароль</label>
+            <div class="password-wrap">
+                <input id="registerPassword" class="auth-input" type="password"
+                       autocomplete="new-password" placeholder="Придумайте пароль">
+                <button class="password-toggle" data-target="registerPassword">Показать</button>
+            </div>
+
+            <label>Повторите пароль</label>
+            <input id="registerPassword2" class="auth-input" type="password"
+                   autocomplete="new-password" placeholder="Повторите пароль">
+
+            <div id="registerError" class="auth-error"></div>
+
+            <button id="registerSubmit" class="auth-primary">Создать аккаунт</button>
+
+            <div class="auth-switch">
+                Уже есть аккаунт?
+                <button id="openLogin">Войти</button>
+            </div>
         </div>
 
-        <div id="chatHistory" class="chat-history">
+        <!-- EMAIL VERIFICATION -->
+        <div id="verifyView" class="auth-view hidden">
+            <div class="auth-title">Подтвердите email</div>
+            <div class="auth-subtitle">
+                Мы отправили код подтверждения на
+                <strong id="verifyEmailText"></strong>
+            </div>
 
-        	<div class="chat-history-header">
+            <label>Код подтверждения</label>
+            <input id="verifyCode" class="auth-input verification-input"
+                   type="text" inputmode="numeric" maxlength="6"
+                   placeholder="000000">
 
-        		<span>Chat history</span>
+            <div class="demo-code">
+                Демо-код: <strong id="demoCodeText">123456</strong>
+            </div>
 
-        		<button id="closeChatHistory">
-        			×
-        		</button>
-        	
-        	</div>
+            <div id="verifyError" class="auth-error"></div>
 
-        	<button id="newChatButton">
-        		+ New chat
-        	</button>
+            <button id="verifySubmit" class="auth-primary">Подтвердить</button>
 
-        	<div id="chatList">
-
-        	</div>
-        	
-        </div>	
-
-        <div class="input-area">
-
-            <input
-                type="text"
-                id="messageInput"
-                placeholder="Write here..."
-            >
-
-            <button id="sendButton">
-                Send
+            <button id="backToRegister" class="auth-secondary">
+                Назад к регистрации
             </button>
+        </div>
 
+        <!-- SUCCESS -->
+        <div id="successView" class="auth-view hidden">
+            <div class="success-icon">✓</div>
+            <div class="auth-title">Регистрация успешна</div>
+            <div class="auth-subtitle">
+                Добро пожаловать в Simple AI, <strong id="successUsername"></strong>.
+            </div>
+
+            <button id="successContinue" class="auth-primary">
+                Продолжить
+            </button>
         </div>
 
     </div>
+</div>
 
-    <script src="script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+<script src="script.js"></script>
 </body>
-
 </html>
