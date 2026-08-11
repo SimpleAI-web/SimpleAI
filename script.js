@@ -1,5 +1,28 @@
 const encodedKey = "QVEuQWI4Uk42S0kzZlJEUS12N3R3UUVWRlB0UFh4eHpuNTdpQTc3WHJsNGhvOXoxdzByUWc=";
 const API_KEY = atob(encodedKey);
+const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+
+async function sendMessage(userText) {
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: userText }] }]
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Ошибка API: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        return data.candidates[0].content.parts[0].text;
+    } catch (error) {
+        console.error("Ошибка при отправке сообщения:", error);
+        return "Произошла ошибка при получении ответа.";
+    }
+}
 
 const MODEL = "gemini-3.5-flash";
 
@@ -279,21 +302,14 @@ closeChatHistory.addEventListener(
 logoutButton.addEventListener(
     "click",
     function() {
+        localStorage.removeItem("simpleAI_user");
+        localStorage.removeItem("google_auth_token"); // <--- ДОБАВЬ ЭТУ СТРОКУ
+        driveAccessToken = null; // <--- И ЭТУ
 
-        localStorage.removeItem(
-            "simpleAI_user"
-        );
-
-        profileButton.style.display = 
-            "inline-block";
-
-        userProfile.style.display =
-            "none";
-
+        profileButton.style.display = "inline-block";
+        userProfile.style.display = "none";
         userAvatar.src = "";
-
         userName.textContent = "";
-
         hideGoogleButton();
 
         if (
@@ -301,11 +317,8 @@ logoutButton.addEventListener(
             google.accounts &&
             google.accounts.id
         ) {
-
             google.accounts.id.disableAutoSelect();
-
         }
-
     }
 );
 
