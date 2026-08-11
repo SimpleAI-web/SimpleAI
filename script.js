@@ -5,6 +5,9 @@ const MODEL = "gemini-1.5-flash";
 
 const GOOGLE_CLIENT_ID = "634945721716-o2c0gg53bgebts6dh859veuv9141okad.apps.googleusercontent.com";
 
+const chatList = document.getElementById("chatList");
+const newChatButton = document.getElementById("newChatButton");
+
 const messageInput = document.getElementById("messageInput");
 const sendButton = document.getElementById("sendButton");
 const chat = document.getElementById("chat");
@@ -710,14 +713,16 @@ function switchChat(id) {
     if (!selectedChat) return;
     
     currentChatId = selectedChat.chatId;
-    chat.innerHTML = "";
-    conversation.length = 0;
+    chat.innerHTML = ""; // Очищаем поле ввода
+    conversation.length = 0; // Очищаем глобальный массив сообщений
     
+    // Загружаем сообщения из выбранного чата
     selectedChat.messages.forEach(msg => {
         addMessage(msg.parts[0].text, msg.role === "user" ? "user" : "ai");
-        conversation.push(msg);
+        conversation.push(msg); // Важно: наполняем глобальный массив, чтобы работал Gemini
     });
-    renderChatList();
+    
+    renderChatList(); // Обновляем список, чтобы подсветить активный чат (если добавишь стили)
 }
 
 newChatButton.addEventListener("click", function() {
