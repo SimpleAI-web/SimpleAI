@@ -712,19 +712,32 @@ function switchChat(id) {
     const selectedChat = chats.find(c => c.chatId === id);
     if (!selectedChat) return;
     
+    // 1. Меняем ID текущего чата
     currentChatId = selectedChat.chatId;
-    chat.innerHTML = ""; // Очищаем поле ввода
-    conversation.length = 0; // Очищаем глобальный массив сообщений
     
-    // Загружаем сообщения из выбранного чата
+    // 2. ПОЛНОСТЬЮ очищаем экран чата
+    chat.innerHTML = "";
+    
+    // 3. ПОЛНОСТЬЮ очищаем глобальный массив контекста для Gemini
+    conversation.length = 0;
+    
+    // 4. Поочередно заново отрисовываем сообщения ТОЛЬКО этого чата
     selectedChat.messages.forEach(msg => {
-        addMessage(msg.parts[0].text, msg.role === "user" ? "user" : "ai");
-        conversation.push(msg); // Важно: наполняем глобальный массив, чтобы работал Gemini
+        // Вызываем именно addMessage с правильным типом ('user' или 'ai')
+        const type = (msg.role === "user") ? "user" : "ai";
+        addMessage(msg.parts[0].text, type);
+        
+        // Восстанавливаем точную копию сообщения в контекст Gemini
+        conversation.push({
+            role: msg.role,
+            parts: [{ text: msg.parts[0].text }]
+        });
     });
     
-    renderChatList(); // Обновляем список, чтобы подсветить активный чат (если добавишь стили)
+    // 5. Обновляем список, закрываем меню истории
+    renderChatList();
+    chatHistory.style.display = "none";
 }
-
 newChatButton.addEventListener("click", function() {
     startNewChat();
     chatHistory.style.display = "none";
