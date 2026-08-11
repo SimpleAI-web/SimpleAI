@@ -466,12 +466,11 @@ async function sendMessage() {
         });
 
         const apiKeyDecoded = atob(encodedKey);
-const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKeyDecoded}`, {
+const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKeyDecoded}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ contents: conversation })
 });
-
         const data =
             await response.json();
 
