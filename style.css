@@ -84,10 +84,20 @@ body {
     background-color: #eeeeee;
 }
 
-/* Google-кнопка */
+#historyButton {
+    height: 36px;
+    padding: 0 14px;
+    border: 1px solid #000000;
+    border-radius: 7px;
+    background-color: #ffffff;
+    color: #000000;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+}
 
-#googleButton {
-    display: none;
+#historyButton:hover{
+    background-color: #eeeeee;
 }
 
 /* Профиль пользователя */
