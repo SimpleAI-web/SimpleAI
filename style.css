@@ -1,0 +1,450 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+}
+
+body {
+    background-color: #ffffff;
+    color: #000000;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Основное окно */
+
+.app {
+    width: calc(100% - 120px);
+    height: calc(100% - 120px);
+
+    margin: 60px;
+
+    border: 2px solid #000000;
+    border-radius: 10px;
+
+    background-color: #ffffff;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: hidden;
+
+    position: relative;
+}
+
+/* Шапка */
+
+.header {
+    height: 60px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 15px 0 20px;
+
+    border-bottom: 2px solid #000000;
+
+    flex-shrink: 0;
+}
+
+.header h1 {
+    font-size: 20px;
+    font-weight: normal;
+}
+
+/* Область аккаунта */
+
+.account-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Кнопки входа и регистрации */
+
+#profileButton {
+    height: 36px;
+    padding: 0 14px;
+    border: 1px solid #000000;
+    border-radius: 7px;
+    background-color: #ffffff;
+    color: #000000;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+#profileButton:hover {
+    background-color: #eeeeee;
+}
+
+/* Google-кнопка */
+
+#googleButton {
+    display: none;
+}
+
+/* Профиль пользователя */
+
+#userProfile {
+    margin-left: auto;
+
+    position: relative;
+
+    display: none;
+
+    align-items: center;
+
+    gap: 8px;
+}
+
+/* Аватар */
+
+#userAvatar {
+    width: 36px;
+    height: 36px;
+
+    border: 1px solid #000000;
+    border-radius: 50%;
+
+    object-fit: cover;
+}
+
+/* Имя пользователя */
+
+#userName {
+    font-size: 14px;
+}
+
+/* Кнопка выхода */
+
+#logoutButton {
+    height: 36px;
+
+    padding: 0 12px;
+
+    border: 1px solid #000000;
+    border-radius: 7px;
+
+    background-color: #ffffff;
+    color: #000000;
+
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 14px;
+
+    cursor: pointer;
+}
+
+#logoutButton:hover {
+    background-color: #eeeeee;
+}
+
+/* Область чата */
+
+.chat {
+    flex: 1;
+
+    padding: 20px;
+
+    overflow-y: auto;
+
+    display: flex;
+    flex-direction: column;
+}
+
+/* Сообщения */
+
+.message {
+    width: fit-content;
+
+    max-width: 75%;
+
+    margin-bottom: 15px;
+
+    padding: 10px 14px;
+
+    border: 1px solid #000000;
+    border-radius: 8px;
+
+    line-height: 1.4;
+
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+
+    white-space: pre-wrap;
+}
+
+/* Сообщение пользователя */
+
+.user-message {
+    margin-left: auto;
+    margin-right: 0;
+}
+
+/* Сообщение AI */
+
+.ai-message {
+    margin-left: 0;
+    margin-right: auto;
+}
+
+/* Область ввода */
+
+.input-area {
+    height: 60px;
+
+    display: flex;
+
+    border-top: 2px solid #000000;
+
+    flex-shrink: 0;
+}
+
+#messageInput {
+    flex: 1;
+
+    border: none;
+
+    padding: 0 15px;
+
+    font-size: 16px;
+
+    outline: none;
+
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+#sendButton {
+    width: 120px;
+
+    border: none;
+
+    border-left: 2px solid #000000;
+
+    background-color: #ffffff;
+
+    color: #000000;
+
+    font-size: 15px;
+
+    cursor: pointer;
+}
+
+#sendButton:hover {
+    background-color: #eeeeee;
+}
+
+/* Анимация трёх точек */
+
+.thinking-dot {
+    display: inline-block;
+
+    margin-right: 4px;
+
+    animation: thinking 1.2s infinite;
+}
+
+.thinking-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.thinking-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes thinking {
+
+    0% {
+        opacity: 0.2;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.2;
+    }
+
+}
+
+.chat-history {
+    position: absolute;
+
+    top: 70px;
+    right: 0;
+    padding: 10px;
+    transform: translateX(-10px);
+
+    width: 320px;
+    height: 300px;
+    
+    background-color: #ffffff;
+
+    border: 2px solid #000000;
+    border-radius: 10px;
+
+    display: none;
+    flex-direction: column;
+
+    overflow: hidden;
+
+    z-index: 100;
+}
+
+.chat-history-header {
+    min-height: 60px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding-left: 0 15px;
+
+    border-bottom: 2px solid #000000;
+
+    flex-shrink: 0;
+}
+
+.chat-history-header span {
+    font-size: 16px;
+}
+
+#closeChatHistory {
+    width: 34px;
+    height: 34px;
+
+    flex-shrink: 0;
+
+    border: 1px solid #000000;
+    border-radius: 7px;
+
+    background-color: #ffffff;
+    color: #000000;
+
+    font-size: 20px;
+
+    cursor: pointer;
+}
+
+#closeChatHistory:hover {
+    background-color: #eeeeee;
+}
+
+#newChatButton {
+    height: 42px;
+
+    margin: 15px;
+
+    border-radius: 1px solid #000000;
+    border-radius: 7px;
+
+    background-color: #ffffff;
+    color: #000000;
+
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 14px;
+
+    cursor: pointer;
+}
+
+#newChatButton:hover {
+    background-color: #eeeeee;
+}
+
+#chatList {
+    flex: 1;
+
+    overflow-y: auto;
+
+    padding: 0 15px 15px;
+
+    max-height: 300px;
+}
+
+#profileChatButton {
+    position: relative;
+
+    display: flex;
+
+    align-items: center;
+    gap: 8px;
+
+    cursor: pointer;
+
+    border-radius: 7px;
+
+    padding: 4px 7px;
+}
+
+#profileChatButton:hover {
+    background-color: #eeeeee;
+}
+
+/* Адаптация для мобильных устройств */
+@media screen and (max-width: 600px) {
+    /* Делаем шапку более компактной */
+    header {
+        flex-wrap: wrap; /* Разрешаем элементам переноситься на новую строку */
+        height: auto;    /* Высота подстраивается под контент */
+        padding: 5px;
+    }
+
+    /* Уменьшаем блок профиля, чтобы он не вылезал */
+    #userProfile {
+        font-size: 12px;
+        padding: 5px;
+    }
+
+    /* Кнопка "Выйти" может занимать лишнее место */
+    #logoutButton {
+        padding: 5px 10px;
+        font-size: 12px;
+    }
+
+    /* Блок истории должен занимать весь экран на телефоне */
+    #chatHistory {
+        width: 100% !important;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        z-index: 1000;
+    }
+
+    /* Поле ввода и кнопка отправить */
+    #messageInput {
+        width: 70%; /* Немного уменьшим */
+    }
+    
+    #sendButton {
+        width: 30%;
+    }
+}
+
+@media screen and (max-width: 600px) {
+    /* 1. Делаем блок истории чатов шириной 85% от экрана */
+    #chatHistory {
+        width: 85% !important; 
+        max-width: 400px; /* Чтобы на огромных телефонах не был слишком широким */
+        padding: 10px;
+        box-sizing: border-box; /* Чтобы отступы не увеличивали размер блока */
+    }
+
+    /* 2. Немного отступ для профиля, чтобы кнопка 'Выйти' не прилипала */
+    #userProfile {
+        margin-right: 10px;
+        gap: 5px; /* расстояние между аватаром и именем */
+    }
+
+    /* 3. Компактная шапка */
+    header {
+        padding: 5px 10px !important;
+        gap: 10px;
+    }
+}

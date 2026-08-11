@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SimpleAI</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+</head>
+
+<body>
+
+    <div class="app">
+
+        <div class="header">
+
+            <h1>SimpleAI</h1>
+
+            <div class="account-area">
+
+                <button id="profileButton">
+                	Профиль
+                </button>
+
+                <div id="googleButton"></div>
+
+                <div id="googleButton"></div>
+
+                <div id="userProfile">
+
+                    <div id="profileChatButton">
+
+                    	<img id="userAvatar" src="" alt="Avatar">
+
+                    	<span id="userName"></span>
+
+                    </div>
+
+                    <button id="logoutButton">
+                        Выйти
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="chat" id="chat">
+
+        </div>
+
+        <div id="chatHistory" class="chat-history">
+
+        	<div class="chat-history-header">
+
+        		<span>Chat history</span>
+
+        		<button id="closeChatHistory">
+        			×
+        		</button>
+        	
+        	</div>
+
+        	<button id="newChatButton">
+        		+ New chat
+        	</button>
+
+        	<div id="chatList">
+
+        	</div>
+        	
+        </div>	
+
+        <div class="input-area">
+
+            <input
+                type="text"
+                id="messageInput"
+                placeholder="Write here..."
+            >
+
+            <button id="sendButton">
+                Send
+            </button>
+
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
