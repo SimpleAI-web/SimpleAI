@@ -1,4 +1,4 @@
-const encodedKey = "QVEuQWI4Uk42SXZMNks0TmR5ajRhTVhkR3gyU08yOUlJdGhrUDJQU2ptR0paV2l0azlUelE=";
+const encodedKey = "QVEuQWI4Uk42S0kzZlJEUS12N3R3UUVWRlB0UFh4eHpuNTdpQTc3WHJsNGhvOXoxdzByUWc=";
 const API_KEY = atob(encodedKey);
 
 const MODEL = "gemini-1.5-flash";
