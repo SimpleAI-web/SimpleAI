@@ -92,6 +92,10 @@ async function handleGoogleLogin(response) {
 // ИНИЦИАЛИЗАЦИЯ GOOGLE
 // ============================================================
 
+// ============================================================
+// ИНИЦИАЛИЗАЦИЯ GOOGLE
+// ============================================================
+
 function initializeGoogleLogin() {
 
     if (
@@ -114,15 +118,20 @@ function initializeGoogleLogin() {
 
         callback: handleGoogleLogin,
 
+        auto_select: true, // Включает автоподхват сессии после перезагрузки
+
         scope: "https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/userinfo.profile"
 
     });
 
     googleInitialized = true;
-xs
+
     console.log(
         "Google Identity Services initialized."
     );
+
+    // Автоматически пытаемся восстановить сессию
+    google.accounts.id.prompt();
 
 }
 
