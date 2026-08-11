@@ -1,686 +1,116 @@
-const encodedKey = "QVEuQWI4Uk42S0kzZlJEUS12N3R3UUVWRlB0UFh4eHpuNTdpQTc3WHJsNGhvOXoxdzByUWc=";
+const encodedKey = "c2stb3ItdjEtOTI1MzVkZjZlMWUzYzYwOGNmNGY5YjAwZDBmMzA5ZjMyMzMyMGUwZjI1OGQyOGVjY2FiZjg0NTM1NjJiYzM5YQ==";
 const API_KEY = atob(encodedKey);
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
-async function sendMessage(userText) {
-    try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: userText }] }]
-            })
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Ошибка API: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        return data.candidates[0].content.parts[0].text;
-    } catch (error) {
-        console.error("Ошибка при отправке сообщения:", error);
-        return "Произошла ошибка при получении ответа.";
-    }
-}
-
-const MODEL = "gemini-3.5-flash";
-
-const GOOGLE_CLIENT_ID = "634945721716-o2c0gg53bgebts6dh859veuv9141okad.apps.googleusercontent.com";
+const API_URL = "https://openrouter.ai/api/v1/chat/completions";
+const MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free";
 
 const chatList = document.getElementById("chatList");
 const newChatButton = document.getElementById("newChatButton");
-
 const messageInput = document.getElementById("messageInput");
 const sendButton = document.getElementById("sendButton");
 const chat = document.getElementById("chat");
 
-const profileButton = document.getElementById("profileButton")
-const googleButton = document.getElementById("googleButton");
-
+const profileButton = document.getElementById("profileButton");
+const historyButton = document.getElementById("historyButton");
 const userProfile = document.getElementById("userProfile");
 const userAvatar = document.getElementById("userAvatar");
 const userName = document.getElementById("userName");
 const logoutButton = document.getElementById("logoutButton");
+
 const profileChatButton = document.getElementById("profileChatButton");
 const chatHistory = document.getElementById("chatHistory");
 const closeChatHistory = document.getElementById("closeChatHistory");
 
-const conversation = [];
+const SYSTEM_PROMPT = `
+Ты — искусственный интеллект SimpleAI.
 
-let googleDriveTokenClient = null;
-let driveAccessToken = localStorage.getItem("google_auth_token") || null;
+Ты работаешь внутри приложения SimpleAI и являешься его AI-ассистентом.
 
-let googleInitialized = false;
+Если пользователь спрашивает, как тебя зовут, кто ты, какая у тебя идентичность или как называется этот AI:
+- отвечай, что тебя зовут SimpleAI;
+- не называй себя названием базовой модели, через которую работает API;
+- не утверждай, что ты разработан Google, NVIDIA, OpenAI, Qwen или другой компанией;
+- можешь сказать: "Я SimpleAI — искусственный интеллект этого приложения."
 
+Отвечай естественно и по существу.
+`;
 
-// ============================================================
-// GOOGLE LOGIN
-// ============================================================
-
-async function handleGoogleLogin(response) {
-    try {
-        const token = response.credential;
-        const payload = token.split(".")[1];
-        const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
-        const decoded = decodeURIComponent(atob(base64).split("").map(function(character) {
-            return "%" + ("00" + character.charCodeAt(0).toString(16)).slice(-2);
-        }).join(""));
-
-        const user = JSON.parse(decoded);
-
-        const profile = {
-            name: user.name || "Google user",
-            email: user.email || "",
-            picture: user.picture || ""
-        };
-
-        showUserProfile(profile);
-        localStorage.setItem("simpleAI_user", JSON.stringify(profile));
-        hideGoogleButton();
-        console.log("Google login successful:", profile);
-
-    } catch (error) {
-        console.error("Ошибка обработки Google-входа:", error);
+const conversation = [
+    {
+        role: "system",
+        content: SYSTEM_PROMPT
     }
-}
+];
 
 
 // ============================================================
-// ИНИЦИАЛИЗАЦИЯ GOOGLE
-// ============================================================
-
-// ============================================================
-// ИНИЦИАЛИЗАЦИЯ GOOGLE
-// ============================================================
-
-function initializeGoogleLogin() {
-
-    if (
-        typeof google === "undefined" ||
-        !google.accounts ||
-        !google.accounts.id
-    ) {
-        console.error("Google Identity Services не загрузился.");
-        return;
-    }
-
-    // 1. Инициализация обычной авторизации (для профиля)
-    google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: handleGoogleLogin,
-        auto_select: true
-    });
-
-    // 2. Инициализация OAuth 2.0 клиента для доступа к Google Диску (appDataFolder)
-    if (google.accounts.oauth2) {
-        googleDriveTokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: GOOGLE_CLIENT_ID,
-            scope: "https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/userinfo.profile",
-            callback: async (tokenResponse) => {
-                if (tokenResponse && tokenResponse.access_token) {
-                    driveAccessToken = tokenResponse.access_token;
-                    localStorage.setItem("google_auth_token", driveAccessToken);
-                    console.log("Токен доступа к Google Диску успешно получен!");
-                    
-                    // Как только получили токен, сразу пробуем подтянуть чаты или отправить их
-                    const cloudChats = await loadChatsFromGoogleDrive(driveAccessToken);
-                    if (cloudChats && Array.isArray(cloudChats) && cloudChats.length > 0) {
-                        chats = cloudChats;
-                        saveChatsToLocalStorage();
-                        renderChatList();
-                        if (chats.length > 0) {
-                            currentChatId = chats[0].chatId;
-                            switchChat(currentChatId);
-                        }
-                        console.log("Чаты загружены с Диска после авторизации!");
-                    } else if (chats.length > 0) {
-                        await saveChatsToGoogleDrive(driveAccessToken, chats);
-                    }
-                }
-            }
-        });
-    }
-
-    googleInitialized = true;
-    console.log("Google Identity Services initialized.");
-    google.accounts.id.prompt();
-}
-
-
-// ============================================================
-// ПОКАЗ GOOGLE-КНОПКИ
-// ============================================================
-
-function showGoogleButton() {
-
-    if (!googleInitialized) {
-
-        alert(
-            "Google Login ещё загружается. Подожди несколько секунд."
-        );
-
-        return;
-
-    }
-
-    googleButton.style.display = "block";
-
-    googleButton.innerHTML = "";
-
-    google.accounts.id.renderButton(
-        googleButton,
-        {
-            type: "standard",
-            theme: "outline",
-            size: "large",
-            text: "signin_with",
-            shape: "rectangular",
-            logo_alignment: "left",
-            width: 210
-        }
-    );
-
-}
-
-
-// ============================================================
-// СКРЫТЬ GOOGLE-КНОПКУ
-// ============================================================
-
-function hideGoogleButton() {
-
-    googleButton.style.display = "none";
-
-    googleButton.innerHTML = "";
-
-}
-
-
-// ============================================================
-// КНОПКИ ВХОДА И РЕГИСТРАЦИИ
-// ============================================================
-
-profileButton.addEventListener(
-    "click",
-    function(){
-        showGoogleButton();
-        
-        // Если клиент токенов уже инициализирован, запрашиваем доступ к диску по клику
-        if (googleDriveTokenClient) {
-            googleDriveTokenClient.requestAccessToken({ prompt: 'consent' });
-        }
-    }
-);
-
-
-// ============================================================
-// ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ
+// ПРОФИЛЬ
 // ============================================================
 
 function showUserProfile(profile) {
-
     profileButton.style.display = "none";
-
     userProfile.style.display = "flex";
 
-    userAvatar.src = profile.picture;
-
-    userName.textContent = profile.name;
-
+    userAvatar.src = profile.picture || "";
+    userName.textContent = profile.name || "";
 }
-
-
-// ============================================================
-// ЗАГРУЗКА СОХРАНЁННОГО ПРОФИЛЯ
-// ============================================================
 
 function loadSavedUser() {
+    const savedUser = localStorage.getItem("simpleAI_user");
 
-    const savedUser =
-        localStorage.getItem("simpleAI_user");
-
-    if (!savedUser) {
-
-        return;
-
-    }
+    if (!savedUser) return;
 
     try {
+        const profile = JSON.parse(savedUser);
 
-        const profile =
-            JSON.parse(savedUser);
-
-        if (
-            profile &&
-            profile.name &&
-            profile.picture
-        ) {
-
+        if (profile && profile.name && profile.picture) {
             showUserProfile(profile);
-
         }
-
     } catch (error) {
-
-        console.error(
-            "Ошибка загрузки профиля:",
-            error
-        );
-
-        localStorage.removeItem(
-            "simpleAI_user"
-        );
-
-    }
-
-}
-
-profileChatButton.addEventListener(
-    "click",
-    function(){
-
-        chatHistory.style.display = "flex";
-
-    }
-
-);
-
-closeChatHistory.addEventListener(
-    "click",
-    function(){
-
-        chatHistory.style.display = "none";
-
-    }
-);
-
-// ============================================================
-// ВЫХОД
-// ============================================================
-
-logoutButton.addEventListener(
-    "click",
-    function() {
+        console.error("Ошибка загрузки профиля:", error);
         localStorage.removeItem("simpleAI_user");
-        localStorage.removeItem("google_auth_token"); // <--- ДОБАВЬ ЭТУ СТРОКУ
-        driveAccessToken = null; // <--- И ЭТУ
-
-        profileButton.style.display = "inline-block";
-        userProfile.style.display = "none";
-        userAvatar.src = "";
-        userName.textContent = "";
-        hideGoogleButton();
-
-        if (
-            typeof google !== "undefined" &&
-            google.accounts &&
-            google.accounts.id
-        ) {
-            google.accounts.id.disableAutoSelect();
-        }
     }
-);
-
-
-// ============================================================
-// ДОБАВЛЕНИЕ СООБЩЕНИЯ
-// ============================================================
-
-function addMessage(text, type) {
-
-    const message =
-        document.createElement("div");
-
-    message.classList.add("message");
-
-    if (type === "user") {
-
-        message.classList.add(
-            "user-message"
-        );
-
-    } else {
-
-        message.classList.add(
-            "ai-message"
-        );
-
-    }
-
-    if (type === "ai") {
-
-        const cleanText =
-            text.replace(
-                /[\uD800-\uDBFF][\uDC00-\uDFFF]/g,
-                ""
-            );
-
-        const formattedText =
-            cleanText
-                .replace(
-                    /\*\*\*(.*?)\*\*\*/g,
-                    "<strong><em>$1</em></strong>"
-                )
-                .replace(
-                    /\*\*(.*?)\*\*/g,
-                    "<strong>$1</strong>"
-                )
-                .replace(
-                    /\*(.*?)\*/g,
-                    "<em>$1</em>"
-                )
-                .replace(
-                    /\n/g,
-                    "<br>"
-                );
-
-        message.innerHTML =
-            formattedText;
-
-    } else {
-
-        message.textContent =
-            text;
-
-    }
-
-    chat.appendChild(message);
-
-    chat.scrollTop =
-        chat.scrollHeight;
-
-    return message;
-
 }
 
 
 // ============================================================
-// АНИМАЦИЯ
+// ИСТОРИЯ ЧАТОВ
 // ============================================================
 
-function createThinkingAnimation() {
+let chats =
+    JSON.parse(localStorage.getItem("simpleAI_chats")) || [];
 
-    const message =
-        document.createElement("div");
-
-    message.classList.add(
-        "message"
-    );
-
-    message.classList.add(
-        "ai-message"
-    );
-
-    message.innerHTML =
-        '<span class="thinking-dot">●</span> ' +
-        '<span class="thinking-dot">●</span> ' +
-        '<span class="thinking-dot">●</span>';
-
-    chat.appendChild(message);
-
-    chat.scrollTop =
-        chat.scrollHeight;
-
-    return message;
-
-}
-
-
-// ============================================================
-// GEMINI
-// ============================================================
-
-async function sendMessage() {
-
-    try {
-
-        const text =
-            messageInput.value.trim();
-
-        if (text === "") {
-
-            return;
-
-        }
-
-        // НАХОДИМ ТЕКУЩИЙ ЧАТ СРАЗУ
-        const currentChat = chats.find(c => c.chatId === currentChatId);
-
-        // СОХРАНЯЕМ СООБЩЕНИЕ ПОЛЬЗОВАТЕЛЯ СРАЗУ В ИСТОРИЮ
-        if (currentChat) {
-            if (currentChat.title === "Новый чат") {
-                currentChat.title = text.length > 20 ? text.substring(0, 20) + "..." : text;
-            }
-            currentChat.messages.push({ role: "user", parts: [{ text: text }] });
-            saveChatsToLocalStorage();
-            renderChatList();
-        }
-
-        addMessage(
-            text,
-            "user"
-        );
-
-        messageInput.value = "";
-
-        sendButton.disabled = true;
-
-        const thinkingMessage =
-            createThinkingAnimation();
-
-        conversation.push({
-
-            role: "user",
-
-            parts: [
-                {
-                    text: text
-                }
-            ]
-
-        });
-
-        const apiKeyDecoded = atob(encodedKey);
-const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKeyDecoded}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ contents: conversation })
-});
-        const data =
-            await response.json();
-
-        thinkingMessage.remove();
-
-        if (!response.ok) {
-
-            addMessage(
-
-                "Ошибка Gemini: " +
-
-                (
-                    data.error &&
-                    data.error.message
-                        ? data.error.message
-                        : "Неизвестная ошибка"
-                ),
-
-                "ai"
-
-            );
-
-            console.log(data);
-
-            sendButton.disabled =
-                false;
-
-            return;
-
-        }
-
-        const answer =
-
-            data.candidates &&
-            data.candidates[0] &&
-            data.candidates[0].content &&
-            data.candidates[0].content.parts &&
-            data.candidates[0].content.parts[0] &&
-            data.candidates[0].content.parts[0].text;
-
-        if (!answer) {
-
-            addMessage(
-                "Gemini не вернул ответ.",
-                "ai"
-            );
-
-            console.log(data);
-
-            sendButton.disabled =
-                false;
-
-            return;
-
-        }
-
-        addMessage(
-            answer,
-            "ai"
-        );
-
-        conversation.push({
-
-            role: "model",
-
-            parts: [
-                {
-                    text: answer
-                }
-            ]
-
-        });
-
-        // СОХРАНЯЕМ ОТВЕТ ИИ В ИСТОРИЮ
-        if (currentChat) {
-            currentChat.messages.push({ role: "model", parts: [{ text: answer }] });
-            saveChatsToLocalStorage();
-        }
-
-    } catch (error) {
-
-        addMessage(
-
-            "Ошибка JavaScript: " +
-            error.message,
-
-            "ai"
-
-        );
-
-        console.error(error);
-
-    }
-
-    sendButton.disabled =
-        false;
-
-}
-
-
-// ============================================================
-// SEND
-// ============================================================
-
-sendButton.addEventListener(
-    "click",
-    sendMessage
-);
-
-
-// ============================================================
-// ENTER
-// ============================================================
-
-messageInput.addEventListener(
-    "keydown",
-    function(event) {
-
-        if (event.key === "Enter") {
-
-            sendMessage();
-
-        }
-
-    }
-);
-
-
-// ============================================================
-// ЗАПУСК GOOGLE
-// ============================================================
-
-function waitForGoogle() {
-
-    if (
-        typeof google !== "undefined" &&
-        google.accounts &&
-        google.accounts.id
-    ) {
-
-        initializeGoogleLogin();
-
-        loadSavedUser();
-
-        return;
-
-    }
-
-    setTimeout(
-        waitForGoogle,
-        300
-    );
-
-}
-
-waitForGoogle();
-
-
-// ============================================================
-// УПРАВЛЕНИЕ ИСТОРИЕЙ ЧАТОВ
-// ============================================================
-
-let chats = JSON.parse(localStorage.getItem("simpleAI_chats")) || [];
 let currentChatId = null;
 
 function saveChatsToLocalStorage() {
-    localStorage.setItem("simpleAI_chats", JSON.stringify(chats));
-
-    // Автоматически отправляем в облако, если есть токен диска
-    if (driveAccessToken) {
-        saveChatsToGoogleDrive(driveAccessToken, chats);
-    }
+    localStorage.setItem(
+        "simpleAI_chats",
+        JSON.stringify(chats)
+    );
 }
 
 function startNewChat() {
     currentChatId = Date.now().toString();
+
     chat.innerHTML = "";
     conversation.length = 0;
-    
-    const newChat = {
+
+    chats.unshift({
         chatId: currentChatId,
         title: "Новый чат",
         messages: []
-    };
-    
-    chats.unshift(newChat);
+    });
+
     saveChatsToLocalStorage();
     renderChatList();
 }
 
 function renderChatList() {
     chatList.innerHTML = "";
+
     chats.forEach(function(chatItem) {
         const chatContainer = document.createElement("div");
+
         chatContainer.style.display = "flex";
         chatContainer.style.justifyContent = "space-between";
         chatContainer.style.alignItems = "center";
@@ -690,29 +120,29 @@ function renderChatList() {
         chatContainer.style.borderRadius = "7px";
         chatContainer.style.cursor = "pointer";
 
-        // Текст чата
         const chatTitle = document.createElement("span");
         chatTitle.textContent = chatItem.title;
+
         chatTitle.onclick = function() {
             switchChat(chatItem.chatId);
             chatHistory.style.display = "none";
         };
-        
-        // Кнопка удаления
+
         const deleteBtn = document.createElement("span");
         deleteBtn.textContent = "✕";
-        deleteBtn.style.color = "black";
         deleteBtn.style.fontWeight = "bold";
         deleteBtn.style.marginLeft = "10px";
-        
-        deleteBtn.onclick = function(e) {
-            e.stopPropagation(); // Чтобы не срабатывал клик по самому чату
-            
-            // Удаляем чат из массива
-            chats = chats.filter(c => c.chatId !== chatItem.chatId);
+        deleteBtn.style.cursor = "pointer";
+
+        deleteBtn.onclick = function(event) {
+            event.stopPropagation();
+
+            chats = chats.filter(function(c) {
+                return c.chatId !== chatItem.chatId;
+            });
+
             saveChatsToLocalStorage();
-            
-            // Если удалили текущий чат — создаем новый
+
             if (currentChatId === chatItem.chatId) {
                 startNewChat();
             } else {
@@ -727,138 +157,306 @@ function renderChatList() {
 }
 
 function switchChat(id) {
-    const selectedChat = chats.find(c => c.chatId === id);
+    const selectedChat =
+        chats.find(function(c) {
+            return c.chatId === id;
+        });
+
     if (!selectedChat) return;
-    
-    // 1. Меняем ID текущего чата
+
     currentChatId = selectedChat.chatId;
-    
-    // 2. ПОЛНОСТЬЮ очищаем экран чата
+
     chat.innerHTML = "";
-    
-    // 3. ПОЛНОСТЬЮ очищаем глобальный массив контекста для Gemini
     conversation.length = 0;
-    
-    // 4. Поочередно заново отрисовываем сообщения ТОЛЬКО этого чата
-    selectedChat.messages.forEach(msg => {
-        // Вызываем именно addMessage с правильным типом ('user' или 'ai')
-        const type = (msg.role === "user") ? "user" : "ai";
+
+    selectedChat.messages.forEach(function(msg) {
+        const type =
+            msg.role === "user" ? "user" : "ai";
+
         addMessage(msg.parts[0].text, type);
-        
-        // Восстанавливаем точную копию сообщения в контекст Gemini
+
         conversation.push({
-            role: msg.role,
-            parts: [{ text: msg.parts[0].text }]
+            role: msg.role === "model" ? "assistant" : msg.role,
+            content: msg.parts[0].text
         });
     });
-    
-    // 5. Обновляем список, закрываем меню истории
+
     renderChatList();
     chatHistory.style.display = "none";
 }
-newChatButton.addEventListener("click", function() {
-    startNewChat();
-    chatHistory.style.display = "none";
+
+
+// ============================================================
+// ПРОФИЛЬ / ИСТОРИЯ
+// ============================================================
+
+profileChatButton.addEventListener(
+    "click",
+    function() {
+        chatHistory.style.display = "flex";
+    }
+);
+
+closeChatHistory.addEventListener(
+    "click",
+    function() {
+        chatHistory.style.display = "none";
+    }
+);
+
+historyButton.addEventListener(
+    "click",
+    function() {
+        chatHistory.style.display = "flex";
+    }
+);
+
+newChatButton.addEventListener(
+    "click",
+    function() {
+        startNewChat();
+        chatHistory.style.display = "none";
+    }
+);
+
+
+// ============================================================
+// ВЫХОД
+// ============================================================
+
+logoutButton.addEventListener(
+    "click",
+    function() {
+        localStorage.removeItem("simpleAI_user");
+
+        profileButton.style.display = "inline-block";
+        userProfile.style.display = "none";
+
+        userAvatar.src = "";
+        userName.textContent = "";
+    }
+);
+
+
+// ============================================================
+// СООБЩЕНИЯ
+// ============================================================
+
+function addMessage(text, type) {
+    const message = document.createElement("div");
+
+    message.classList.add("message");
+
+    if (type === "user") {
+        message.classList.add("user-message");
+    } else {
+        message.classList.add("ai-message");
+    }
+
+    if (type === "ai") {
+        const cleanText = text.replace(
+            /[\uD800-\uDBFF][\uDC00-\uDFFF]/g,
+            ""
+        );
+
+        const formattedText = cleanText
+            .replace(
+                /\*\*\*(.*?)\*\*\*/g,
+                "<strong><em>$1</em></strong>"
+            )
+            .replace(
+                /\*\*(.*?)\*\*/g,
+                "<strong>$1</strong>"
+            )
+            .replace(
+                /\*(.*?)\*/g,
+                "<em>$1</em>"
+            )
+            .replace(/\n/g, "<br>");
+
+        message.innerHTML = formattedText;
+    } else {
+        message.textContent = text;
+    }
+
+    chat.appendChild(message);
+    chat.scrollTop = chat.scrollHeight;
+
+    return message;
+}
+
+
+// ============================================================
+// АНИМАЦИЯ
+// ============================================================
+
+function createThinkingAnimation() {
+    const message = document.createElement("div");
+
+    message.classList.add("message", "ai-message");
+
+    message.innerHTML =
+        '<span class="thinking-dot">●</span> ' +
+        '<span class="thinking-dot">●</span> ' +
+        '<span class="thinking-dot">●</span>';
+
+    chat.appendChild(message);
+    chat.scrollTop = chat.scrollHeight;
+
+    return message;
+}
+
+
+// ============================================================
+// AI — ВРЕМЕННО GEMINI
+// ============================================================
+
+async function sendMessage() {
+    try {
+        const text = messageInput.value.trim();
+
+        if (text === "") return;
+
+        const currentChat =
+            chats.find(function(c) {
+                return c.chatId === currentChatId;
+            });
+
+        if (currentChat) {
+            if (currentChat.title === "Новый чат") {
+                currentChat.title =
+                    text.length > 20
+                        ? text.substring(0, 20) + "..."
+                        : text;
+            }
+
+            currentChat.messages.push({
+                role: "user",
+                parts: [{ text: text }]
+            });
+
+            saveChatsToLocalStorage();
+            renderChatList();
+        }
+
+        addMessage(text, "user");
+
+        messageInput.value = "";
+        sendButton.disabled = true;
+
+        const thinkingMessage =
+            createThinkingAnimation();
+
+        conversation.push({
+            role: "user",
+            content: text
+        });
+
+        const response = await fetch(API_URL, {
+    method: "POST",
+
+    headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${API_KEY}`
+    },
+
+    body: JSON.stringify({
+        model: MODEL,
+        messages: conversation
+    })
 });
 
-// Инициализация при запуске
+const data = await response.json();
+
+        thinkingMessage.remove();
+
+        if (!response.ok) {
+            addMessage(
+                "Ошибка AI: " +
+                (
+                    data.error &&
+                    data.error.message
+                        ? data.error.message
+                        : "Неизвестная ошибка"
+                ),
+                "ai"
+            );
+
+            console.log(data);
+            sendButton.disabled = false;
+            return;
+        }
+
+        const answer =
+    data.choices &&
+    data.choices[0] &&
+    data.choices[0].message &&
+    data.choices[0].message.content;
+        if (!answer) {
+            addMessage("AI не вернул ответ.", "ai");
+            console.log(data);
+            sendButton.disabled = false;
+            return;
+        }
+
+        addMessage(answer, "ai");
+
+        conversation.push({
+            role: "assistant",
+            content: answer
+        });
+
+        if (currentChat) {
+            currentChat.messages.push({
+                role: "model",
+                parts: [{ text: answer }]
+            });
+
+            saveChatsToLocalStorage();
+        }
+
+    } catch (error) {
+        addMessage(
+            "Ошибка JavaScript: " + error.message,
+            "ai"
+        );
+
+        console.error(error);
+    }
+
+    sendButton.disabled = false;
+}
+
+
+// ============================================================
+// SEND / ENTER
+// ============================================================
+
+sendButton.addEventListener(
+    "click",
+    sendMessage
+);
+
+messageInput.addEventListener(
+    "keydown",
+    function(event) {
+        if (event.key === "Enter") {
+            sendMessage();
+        }
+    }
+);
+
+
+// ============================================================
+// ЗАПУСК
+// ============================================================
+
+loadSavedUser();
+
 if (chats.length === 0) {
     startNewChat();
 } else {
+    currentChatId = chats[0].chatId;
     renderChatList();
-}
-
-// ============================================================
-// СИНХРОНИЗАЦИЯ С GOOGLE DRIVE APPDATA
-// ============================================================
-
-// Функция поиска и скачивания чатов с Google Диска
-async function loadChatsFromGoogleDrive(token) {
-    try {
-        // 1. Ищем файл с именем "chats.json" в скрытой папке appDataFolder
-        const query = encodeURIComponent("name = 'chats.json' and 'appDataFolder' in parents and trashed = false");
-        const listResponse = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&spaces=appDataFolder`, {
-            method: "GET",
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-        
-        const listData = await listResponse.json();
-
-        // Если файла еще нет на диске — значит, аккаунт новый, возвращаем null
-        if (!listData.files || listData.files.length === 0) {
-            console.log("Файл чатов на Google Диске не найден (новый пользователь).");
-            return null;
-        }
-
-        const fileId = listData.files[0].id;
-
-        // 2. Скачиваем содержимое найденного файла
-        const fileResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-            method: "GET",
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-
-        if (!fileResponse.ok) {
-            throw new Error("Не удалось скачать файл с Google Диска");
-        }
-
-        const cloudChats = await fileResponse.json();
-        console.log("Чаты успешно загружены из Google Диска!");
-        return cloudChats;
-
-    } catch (error) {
-        console.error("Ошибка при загрузке с Google Диска:", error);
-        return null;
-    }
-}
-
-// Функция сохранения/обновления чатов на Google Диске
-async function saveChatsToGoogleDrive(token, chatsData) {
-    try {
-        const jsonData = JSON.stringify(chatsData);
-
-        // 1. Сначала ищем, существует ли уже файл "chats.json" в appDataFolder
-        const query = encodeURIComponent("name = 'chats.json' and 'appDataFolder' in parents and trashed = false");
-        const listResponse = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&spaces=appDataFolder`, {
-            method: "GET",
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-        
-        const listData = await listResponse.json();
-        const fileExists = listData.files && listData.files.length > 0;
-
-        if (fileExists) {
-            // 2А. Если файл есть — обновляем его (перезаписываем свежими данными)
-            const fileId = listData.files[0].id;
-            await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
-                method: "PATCH",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                },
-                body: jsonData
-            });
-            console.log("Чаты на Google Диске обновлены.");
-        } else {
-            // 2Б. Если файла нет — создаем его с нуля в скрытой папке
-            const metadata = {
-                name: "chats.json",
-                parents: ["appDataFolder"]
-            };
-
-            const form = new FormData();
-            form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
-            form.append("file", new Blob([jsonData], { type: "application/json" }));
-
-            await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
-                method: "POST",
-                headers: { "Authorization": `Bearer ${token}` },
-                body: form
-            });
-            console.log("Создан новый файл чатов на Google Диске.");
-        }
-
-    } catch (error) {
-        console.error("Ошибка при сохранении на Google Диск:", error);
-    }
+    switchChat(currentChatId);
 }
