@@ -22,15 +22,6 @@ const MESSAGES_TABLE = "messages";
 /* ============================================================
    AI
    ============================================================ */
-const encodedKey = "c2stb3ItdjEtOTI1MzVkZjZlMWUzYzYwOGNmNGY5YjAwZDBmMzA5ZjMyMzMyMGUwZjI1OGQyOGVjY2FiZjg0NTM1NjJiYzM5YQ==";
-
-const API_KEY = atob(encodedKey);
-
-const API_URL =
-    "https://openrouter.ai/api/v1/chat/completions";
-
-const MODEL =
-    "nvidia/nemotron-3-ultra-550b-a55b:free";
 
 
 /* ============================================================
@@ -1992,45 +1983,27 @@ async function sendMessage() {
          * Запрос к AI.
          */
 
-        const response =
-            await fetch(
-                API_URL,
-                {
+        const { data, error } =
+    await supabaseClient.functions.invoke("chat", {
+        body: {
+            messages: conversation
+        }
+    });
 
-                    method:
-                        "POST",
+if (error) {
+    thinkingMessage.remove();
 
-                    headers: {
+    addMessage(
+        "Ошибка AI: " + error.message,
+        "ai"
+    );
 
-                        "Content-Type":
-                            "application/json",
+    console.error(error);
 
-                        "Authorization":
-                            `Bearer ${API_KEY}`
+    return;
+}
 
-                    },
-
-                    body:
-                        JSON.stringify({
-
-                            model:
-                                MODEL,
-
-                            messages:
-                                conversation
-
-                        })
-
-                }
-            );
-
-
-        const data =
-            await response.json();
-
-
-        thinkingMessage.remove();
-
+thinkingMessage.remove();
 
         if (!response.ok) {
 
