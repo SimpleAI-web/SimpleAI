@@ -2005,24 +2005,6 @@ if (error) {
 
 thinkingMessage.remove();
 
-        if (!response.ok) {
-
-            addMessage(
-                "Ошибка AI: " +
-                (
-                    data.error?.message ||
-                    "Неизвестная ошибка"
-                ),
-                "ai"
-            );
-
-            console.log(data);
-
-            return;
-
-        }
-
-
         const answer =
             data
                 .choices?.[0]
