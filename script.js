@@ -55,9 +55,6 @@ const chat =
 const profileButton =
     document.getElementById("profileButton");
 
-const historyButton =
-    document.getElementById("historyButton");
-
 const userProfile =
     document.getElementById("userProfile");
 
@@ -1616,18 +1613,6 @@ closeChatHistory.addEventListener(
 
     }
 );
-
-
-historyButton.addEventListener(
-    "click",
-    function () {
-
-        chatHistory.style.display =
-            "flex";
-
-    }
-);
-
 
 newChatButton.addEventListener(
     "click",
