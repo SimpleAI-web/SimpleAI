@@ -505,3 +505,70 @@ body {
         max-height: 95vh;
     }
 }
+
+.thinking-message {
+    width: fit-content;
+    max-width: fit-content;
+
+    padding: 8px 12px;
+
+    margin: 8px 0;
+
+    border-radius: 12px;
+
+    background: transparent;
+
+    box-sizing: border-box;
+}
+
+.thinking-dots {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    height: 12px;
+}
+
+.thinking-dot {
+    font-size: 8px;
+    line-height: 8px;
+
+    opacity: 0.35;
+
+    animation:
+        thinkingPulse 1.4s infinite ease-in-out;
+}
+
+.thinking-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.thinking-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+.thinking-time {
+    margin-top: 5px;
+
+    font-size: 11px;
+
+    line-height: 14px;
+
+    color: #777;
+
+    white-space: nowrap;
+}
+
+@keyframes thinkingPulse {
+
+    0%,
+    80%,
+    100% {
+        opacity: 0.25;
+    }
+
+    40% {
+        opacity: 0.8;
+    }
+
+}
