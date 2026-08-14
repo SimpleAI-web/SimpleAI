@@ -189,6 +189,8 @@ let currentChatId = null;
 
 let currentUser = null;
 
+let currentAbortController = null;
+
 
 /* ============================================================
    AUTH UI
@@ -1724,24 +1726,39 @@ function addMessage(
    THINKING ANIMATION
    ============================================================ */
 
+/* ============================================================
+   THINKING ANIMATION
+   ============================================================ */
+
 function createThinkingAnimation() {
 
     const message =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
 
     message.classList.add(
-        "message",
-        "ai-message"
+        "thinking-message"
     );
 
 
-    message.innerHTML =
-        '<span class="thinking-dot">●</span> ' +
-        '<span class="thinking-dot">●</span> ' +
-        '<span class="thinking-dot">●</span>';
+    message.innerHTML = `
+        <div class="thinking-dots">
+            <span class="thinking-dot">●</span>
+            <span class="thinking-dot">●</span>
+            <span class="thinking-dot">●</span>
+        </div>
+
+        <div class="thinking-time">
+            Думает 0 секунд
+        </div>
+
+        <button
+            class="cancel-request-button"
+            type="button"
+        >
+            Отменить запрос
+        </button>
+    `;
 
 
     chat.appendChild(
@@ -1753,10 +1770,185 @@ function createThinkingAnimation() {
         chat.scrollHeight;
 
 
+    let seconds = 0;
+
+
+    const timeElement =
+        message.querySelector(
+            ".thinking-time"
+        );
+
+
+    const cancelButton =
+        message.querySelector(
+            ".cancel-request-button"
+        );
+
+
+    /*
+     * Кнопка отмены изначально скрыта.
+     */
+
+    cancelButton.style.display =
+        "none";
+
+
+    /*
+     * Показываем кнопку через 30 секунд.
+     */
+
+    const cancelTimer =
+        setTimeout(
+            function () {
+
+                if (
+                    message.parentElement &&
+                    currentAbortController
+                ) {
+
+                    cancelButton.style.display =
+                        "block";
+
+                }
+
+            },
+            30000
+        );
+
+
+    /*
+     * Счётчик времени.
+     */
+
+    const timer =
+        setInterval(
+            function () {
+
+                seconds++;
+
+
+                timeElement.textContent =
+                    `Думает ${seconds} ${getSecondsWord(seconds)}`;
+
+            },
+            1000
+        );
+
+
+    /*
+     * Кнопка отмены.
+     */
+
+    cancelButton.addEventListener(
+        "click",
+        function () {
+
+            if (currentAbortController) {
+
+                currentAbortController.abort();
+
+            }
+
+        }
+    );
+
+
+    /*
+     * Сохраняем таймеры прямо в элементе.
+     * Потом removeThinkingAnimation()
+     * сможет их остановить.
+     */
+
+    message.thinkingTimer =
+        timer;
+
+
+    message.cancelTimer =
+        cancelTimer;
+
+
     return message;
 
 }
 
+
+/* ============================================================
+   REMOVE THINKING ANIMATION
+   ============================================================ */
+
+function removeThinkingAnimation(message) {
+
+    if (!message) {
+        return;
+    }
+
+
+    if (message.thinkingTimer) {
+
+        clearInterval(
+            message.thinkingTimer
+        );
+
+    }
+
+
+    if (message.cancelTimer) {
+
+        clearTimeout(
+            message.cancelTimer
+        );
+
+    }
+
+
+    message.remove();
+
+}
+
+
+/* ============================================================
+   SECONDS WORD
+   ============================================================ */
+
+function getSecondsWord(seconds) {
+
+    const lastTwo =
+        seconds % 100;
+
+    const last =
+        seconds % 10;
+
+
+    if (
+        lastTwo >= 11 &&
+        lastTwo <= 14
+    ) {
+
+        return "секунд";
+
+    }
+
+
+    if (last === 1) {
+
+        return "секунду";
+
+    }
+
+
+    if (
+        last >= 2 &&
+        last <= 4
+    ) {
+
+        return "секунды";
+
+    }
+
+
+    return "секунд";
+
+}
 
 /* ============================================================
    SAVE MESSAGE TO SUPABASE
@@ -1993,12 +2185,18 @@ async function sendMessage() {
 if (error) {
     thinkingMessage.remove();
 
+    console.error(
+        "SUPABASE FUNCTION ERROR:",
+        error
+        );
+
     addMessage(
-        "Ошибка AI: " + error.message,
+        "Ошибка AI: " + 
+        (
+            error.message || "Edge Function вернула ошибку."
+        ),
         "ai"
     );
-
-    console.error(error);
 
     return;
 }
